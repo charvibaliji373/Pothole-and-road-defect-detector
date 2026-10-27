@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadVision AI — Autonomous Pothole & Road Defect Intelligence</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome & Tailwind -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet GIS Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Chart.js & Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Lottie Web Vector Animation Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
+  <!-- Custom Stylesheets -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+</head>
+<body class="selection:bg-cyan-500 selection:text-white">
+
+  <!-- Ambient Grid Background -->
+  <div class="grid-overlay"></div>
+
+  <!-- =====================================================================
+       TOP HEADER & ANIMATED FLOATING NAVBAR
+       ===================================================================== -->
+  <header class="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/85 backdrop-blur-2xl transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3.5 cursor-pointer group" onclick="window.app.switchTab('tab-home')">
+        <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 border border-cyan-400/40 group-hover:scale-105 group-hover:shadow-cyan-400/50 transition-all duration-300">
+          <i class="fa-solid fa-road text-white text-2xl group-hover:rotate-6 transition-transform"></i>
+          <span class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-cyan-400"></span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-heading font-black text-2xl tracking-tight text-white group-hover:text-cyan-300 transition-colors">RoadVision<span class="text-cyan-400">.AI</span></span>
+            <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 shadow-sm shadow-cyan-500/20">PRO v2.4</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block font-medium">Deep Learning Pavement Distress & Civil Maintenance Engine</p>
+        </div>
+      </div>
+
+      <!-- Quick Telemetry & Status Badges -->
+      <div class="hidden xl:flex items-center gap-4 text-xs font-mono">
+        <div class="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-white/10 flex items-center gap-2.5" id="engine-health-badge">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 led-breathing"></span>
+          <span class="text-emerald-300 font-bold">YOLOv8n Active (CPU/CUDA)</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-white/10 flex items-center gap-2 text-slate-300">
+          <i class="fa-solid fa-satellite text-cyan-400"></i>
+          <span>GIS Corridors: <b class="text-white">Active</b></span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-white/10 flex items-center gap-2 text-slate-300">
+          <i class="fa-solid fa-shield-halved text-amber-400"></i>
+          <span>ASTM D6433 Compliant</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button class="py-2.5 px-5 rounded-full bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs tracking-wider shadow-lg shadow-rose-600/30 btn-glow-rose flex items-center gap-2 transition-all"
+                onclick="window.app.switchTab('tab-citizen')">
+          <i class="fa-solid fa-bullhorn text-xs animate-bounce"></i>
+          <span>Report Road Defect</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Animated Pill Navigation Track -->
+    <div class="border-t border-white/5 bg-slate-950/70 py-2.5 overflow-x-auto">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+        <nav class="nav-track-container min-w-max">
+          <button class="nav-pill active" data-tab="tab-home" title="Complete project introduction, problem statement and guided walkthrough">
+            <i class="fa-solid fa-house text-cyan-400 text-sm"></i>
+            <span>Home & Overview</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-studio" title="Inspect road photos with AI bounding boxes and 3D repair cards">
+            <i class="fa-solid fa-crosshairs text-cyan-400 text-sm"></i>
+            <span>AI Detection Studio</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-live" title="Real-time dashcam HUD with collision warning buzzer">
+            <i class="fa-solid fa-video text-amber-400 text-sm"></i>
+            <span>Live Dashcam HUD</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-map" title="Interactive geospatial defect map with heat corridors">
+            <i class="fa-solid fa-map-location-dot text-emerald-400 text-sm"></i>
+            <span>GIS Defect Map</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-municipal" title="Municipal Kanban dispatcher and formal PDF work orders">
+            <i class="fa-solid fa-clipboard-check text-blue-400 text-sm"></i>
+            <span>Municipal Kanban</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-analytics" title="Pavement Condition Index and financial distress charts">
+            <i class="fa-solid fa-chart-pie text-purple-400 text-sm"></i>
+            <span>PCI Health Analytics</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-citizen" title="Citizen reporting portal with GPS auto-detection">
+            <i class="fa-solid fa-users text-rose-400 text-sm"></i>
+            <span>Citizen Portal</span>
+          </button>
+          <button class="nav-pill" data-tab="tab-specs" title="YOLOv8 neural network evaluation and mAP metrics">
+            <i class="fa-solid fa-microchip text-slate-400 text-sm"></i>
+            <span>Model Benchmarks</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+
+    <!-- =====================================================================
+         TAB 0: HOME PAGE (COMPLETE OVERVIEW, PROBLEM STATEMENT & 3D WALKTHROUGH)
+         ===================================================================== -->
+    <section id="tab-home" class="tab-content space-y-12">
+      
+      <!-- Home Hero Banner with Split 2-Column Lottie Showcase -->
+      <div class="glass-panel p-8 sm:p-12 relative overflow-hidden border border-cyan-500/30">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+          
+          <!-- Left Column: Hero Typography & CTAs (7 cols) -->
+          <div class="lg:col-span-7 space-y-6">
+            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold tracking-wide shadow-lg shadow-cyan-950/50">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+              <span>AI-Powered Autonomous Road Infrastructure Protection</span>
+            </div>
+
+            <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+              Next-Gen Autonomous <br class="hidden sm:block"/>
+              <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">Pothole & Road Defect</span> Intelligence
+            </h1>
+
+            <p class="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl">
+              A comprehensive, production-ready AI platform that bridges deep learning computer vision (<b>YOLOv8</b>) with standard civil engineering principles (<b>ASTM D6433</b>). Detects potholes in sub-seconds, calculates exact asphalt compaction tonnage, issues municipal work orders, and empowers citizens to report road hazards instantly.
+            </p>
+
+            <!-- Action CTA Group -->
+            <div class="flex flex-wrap items-center gap-4 pt-2">
+              <button class="py-4 px-8 rounded-2xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm tracking-wider shadow-xl shadow-cyan-600/30 btn-glow-cyan flex items-center gap-3 transition-all"
+                      onclick="window.app.switchTab('tab-studio')">
+                <i class="fa-solid fa-crosshairs text-base"></i>
+                <span>Launch AI Detection Studio</span>
+              </button>
+
+              <button class="py-4 px-8 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 font-bold text-sm tracking-wider hover-lift flex items-center gap-3 transition-all"
+                      onclick="window.app.switchTab('tab-live')">
+                <i class="fa-solid fa-video text-amber-400 text-base"></i>
+                <span>Experience Dashcam HUD</span>
+              </button>
+
+              <a href="#home-walkthrough" class="py-4 px-6 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 text-slate-300 font-semibold text-sm flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-arrow-down text-xs text-slate-400"></i>
+                <span>How To Use (Guided Tour)</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Right Column: Pure Lottie Roadtrip Animation (5 cols) -->
+          <div class="lg:col-span-5 flex justify-center w-full">
+            <div id="hero-lottie-card" class="relative w-full max-w-[500px] rounded-3xl bg-slate-950/60 backdrop-blur-2xl border border-cyan-500/30 p-2 sm:p-4 shadow-2xl shadow-cyan-950/80 overflow-hidden flex items-center justify-center group hover:border-cyan-400/80 hover:shadow-cyan-500/25 transition-all duration-500">
+              <div id="hero-lottie-container" class="w-full h-[280px] sm:h-[340px] flex items-center justify-center">
+                <!-- Pure Lottie Animation Injected Here -->
+              </div>
+              <!-- Ambient Glow Orbs -->
+              <div class="absolute -top-14 -right-14 w-44 h-44 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none"></div>
+              <div class="absolute -bottom-14 -left-14 w-44 h-44 bg-blue-600/20 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Ambient Glow -->
+        <div class="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-20 -top-20 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+      </div>
+
+      <!-- Live Impact Numbers -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 tilt-card border border-cyan-500/20">
+          <span class="text-slate-400 text-xs font-mono block">DETECTION PRECISION</span>
+          <div class="font-heading text-4xl font-black text-cyan-400 mt-1">76.2%</div>
+          <span class="text-xs text-slate-400 mt-1 block">Trained YOLOv8 Neural Model</span>
+        </div>
+
+        <div class="glass-panel p-5 tilt-card border border-blue-500/20">
+          <span class="text-slate-400 text-xs font-mono block">INFERENCE LATENCY</span>
+          <div class="font-heading text-4xl font-black text-blue-400 mt-1">152 ms</div>
+          <span class="text-xs text-slate-400 mt-1 block">Real-Time Sub-Second CPU Speed</span>
+        </div>
+
+        <div class="glass-panel p-5 tilt-card border border-amber-500/20">
+          <span class="text-slate-400 text-xs font-mono block">ENGINEERING STANDARD</span>
+          <div class="font-heading text-4xl font-black text-amber-400 mt-1">ASTM</div>
+          <span class="text-xs text-slate-400 mt-1 block">D6433 Pavement Distress Rating</span>
+        </div>
+
+        <div class="glass-panel p-5 tilt-card border border-emerald-500/20">
+          <span class="text-slate-400 text-xs font-mono block">MUNICIPAL SLA</span>
+          <div class="font-heading text-4xl font-black text-emerald-400 mt-1">48 Hrs</div>
+          <span class="text-xs text-slate-400 mt-1 block">Urgent Defect Dispatch Protocol</span>
+        </div>
+      </div>
+
+      <!-- Problem Statement vs RoadVision AI Solution (Storyboard) -->
+      <div class="feature-guide-box space-y-6">
+        <div>
+          <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">THE PROBLEM STATEMENT & WHY IT MATTERS</span>
+          <h3 class="font-heading text-2xl sm:text-3xl font-extrabold text-white">Why Pothole Detection Demands Modern AI</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Traditional Problems -->
+          <div class="p-6 rounded-2xl bg-rose-950/20 border border-rose-500/40 space-y-4 hover:border-rose-400 hover:shadow-xl hover:shadow-rose-950/50 hover:scale-[1.01] transition-all">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold text-2xl shadow-lg shadow-rose-500/20">
+                ⚠️
+              </div>
+              <h4 class="font-heading text-lg font-bold text-rose-200">The Problem with Traditional Inspection</h4>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2.5 list-disc list-inside leading-relaxed">
+              <li><b>Manual Walking Surveys:</b> Municipal inspectors walk on active, high-speed roadways with tape measures, creating serious safety hazards.</li>
+              <li><b>Weeks of Delay:</b> By the time an inspection report is filed on paper, water seepage expands a 20cm crack into a dangerous 1-meter sinkhole.</li>
+              <li><b>Severe Accidents & Costs:</b> Potholes cause wheel rim blowouts, suspension destruction, motorcycle crashes, and millions in municipal liability claims.</li>
+              <li><b>No Material Forecasting:</b> Road crews arrive with either too much or too little asphalt, wasting municipal taxpayers' money.</li>
+            </ul>
+          </div>
+
+          <!-- RoadVision AI Solution -->
+          <div class="p-6 rounded-2xl bg-emerald-950/20 border border-emerald-500/40 space-y-4 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-950/50 hover:scale-[1.01] transition-all">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-2xl shadow-lg shadow-emerald-500/20">
+                🛡️
+              </div>
+              <h4 class="font-heading text-lg font-bold text-emerald-200 flex items-center gap-2">
+                <span>The RoadVision AI Solution</span>
+                <span class="text-xl">✨</span>
+              </h4>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2.5 list-disc list-inside leading-relaxed">
+              <li><b>150ms Automated Vision:</b> Analyzes photos and video streams from dashcams, smartphones, and survey vehicles instantly.</li>
+              <li><b>ASTM D6433 Pavement Index (PCI):</b> Automatically scores road condition from 0 (Failed) to 100 (Good), eliminating guesswork.</li>
+              <li><b>Exact Asphalt Mass Calculation:</b> Computes required hot-mix asphalt (HMA) volume in metric tons using 2,400 kg/m³ density models.</li>
+              <li><b>End-to-End Civic Dispatch:</b> Citizens report hazards via phone with auto-GPS; municipalities manage repair work orders on a Kanban board.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Core Pillars of RoadVision AI — 3D Flip Cards -->
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">INTERACTIVE 3D ARCHITECTURE CARDS</span>
+            <h3 class="font-heading text-2xl sm:text-3xl font-extrabold text-white">The 4 Core Pillars of the Platform</h3>
+            <p class="text-xs text-slate-400">Click <b class="text-cyan-300">anywhere inside any card</b> to rotate in 3D perspective and inspect the technical engineering specifications.</p>
+          </div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
+            <i class="fa-solid fa-hand-pointer animate-bounce text-cyan-400"></i>
+            <span>Click Anywhere to Flip ↻</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Pillar 1: Vision Perception -->
+          <div class="flip-card" id="pillar-card-1">
+            <div class="flip-card-inner">
+              <div class="flip-card-front p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-mono font-bold text-cyan-400">PILLAR 01</span>
+                    <div class="flex items-center gap-2">
+                      <i class="fa-solid fa-eye text-cyan-400 text-base"></i>
+                      <span class="flip-hint-pill"><i class="fa-solid fa-arrows-rotate"></i> Flip ↻</span>
+                    </div>
+                  </div>
+                  <h4 class="font-heading text-lg font-bold text-white mb-2">Neural Vision (YOLOv8)</h4>
+                  <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                    High-speed object detection backbone with multiscale C2f feature pyramid. Accurately localizes pothole bounding contours under direct sunlight, shadows, and wet pavement conditions.
+                  </p>
+                  <div class="p-2.5 rounded-lg bg-slate-900/80 border border-white/5 text-[11px] font-mono text-cyan-300">
+                    Accuracy: 76.2% Precision / 72.1% mAP@50
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-front">
+                  <span>Inspect Model Architecture</span>
+                  <i class="fa-solid fa-rotate-right text-cyan-400"></i>
+                </div>
+              </div>
+
+              <div class="flip-card-back p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                    <span class="text-xs font-mono text-cyan-400 font-bold">TECH SPEC</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-900/50 text-cyan-300">ULTRALYTICS NANO</span>
+                      <span class="flip-hint-pill flipped"><i class="fa-solid fa-arrows-rotate"></i> Flip Back ↻</span>
+                    </div>
+                  </div>
+                  <div class="space-y-3 text-xs">
+                    <div>
+                      <span class="text-slate-400 text-[11px] block font-medium">Anchor-Free Regression</span>
+                      <p class="text-slate-100 leading-relaxed">
+                        Eliminates pre-defined anchor boxes. Directly predicts center offsets and bounding dimensions, drastically minimizing false positives from tire tracks or asphalt patches.
+                      </p>
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded border border-white/5 font-mono text-[11px] space-y-1">
+                      <div>Input Size: <b class="text-cyan-300">416 × 416 px</b></div>
+                      <div>Inference Latency: <b class="text-emerald-300">~150 ms (CPU)</b></div>
+                      <div>Weights: <b class="text-slate-200">best.pt (6.46 MB)</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-back">
+                  <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                  <span>Back to Overview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pillar 2: Civil Engineering -->
+          <div class="flip-card" id="pillar-card-2">
+            <div class="flip-card-inner">
+              <div class="flip-card-front p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-mono font-bold text-amber-400">PILLAR 02</span>
+                    <div class="flex items-center gap-2">
+                      <i class="fa-solid fa-compass-drafting text-amber-400 text-base"></i>
+                      <span class="flip-hint-pill"><i class="fa-solid fa-arrows-rotate"></i> Flip ↻</span>
+                    </div>
+                  </div>
+                  <h4 class="font-heading text-lg font-bold text-white mb-2">ASTM D6433 Distress Modeling</h4>
+                  <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                    Converts visual pixel area coverage into standardized civil distress deduct points. Calculates exact Pavement Condition Index (PCI 0–100) and recommends appropriate repair procedures.
+                  </p>
+                  <div class="p-2.5 rounded-lg bg-slate-900/80 border border-white/5 text-[11px] font-mono text-amber-300">
+                    Standard: ASTM D6433-20 Pavement Survey
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-front">
+                  <span>Inspect Asphalt Formula</span>
+                  <i class="fa-solid fa-rotate-right text-amber-400"></i>
+                </div>
+              </div>
+
+              <div class="flip-card-back p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                    <span class="text-xs font-mono text-amber-400 font-bold">TECH SPEC</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/50 text-amber-300">COMPACTION MODEL</span>
+                      <span class="flip-hint-pill flipped"><i class="fa-solid fa-arrows-rotate"></i> Flip Back ↻</span>
+                    </div>
+                  </div>
+                  <div class="space-y-3 text-xs">
+                    <div>
+                      <span class="text-slate-400 text-[11px] block font-medium">Asphalt Mass Formula</span>
+                      <p class="text-slate-100 leading-relaxed font-mono text-[11px] bg-slate-900/60 p-2 rounded">
+                        Mass (Tons) = Area (m²) × 0.065m × 2,400 kg/m³ ÷ 1,000
+                      </p>
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded border border-white/5 font-mono text-[11px] space-y-1">
+                      <div>Hot Mix Asphalt: <b class="text-amber-300">2,400 kg/m³</b></div>
+                      <div>Nominal Depth: <b class="text-slate-200">65 mm</b></div>
+                      <div>Currencies: <b class="text-emerald-300">USD ($) & INR (₹)</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-back">
+                  <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                  <span>Back to Overview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pillar 3: Geospatial & HUD -->
+          <div class="flip-card" id="pillar-card-3">
+            <div class="flip-card-inner">
+              <div class="flip-card-front p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-mono font-bold text-emerald-400">PILLAR 03</span>
+                    <div class="flex items-center gap-2">
+                      <i class="fa-solid fa-location-crosshairs text-emerald-400 text-base"></i>
+                      <span class="flip-hint-pill"><i class="fa-solid fa-arrows-rotate"></i> Flip ↻</span>
+                    </div>
+                  </div>
+                  <h4 class="font-heading text-lg font-bold text-white mb-2">GIS & Cockpit HUD</h4>
+                  <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                    Interactive Leaflet GIS map with dark tiles and glowing severity pins. Live dashcam cockpit HUD simulator with dynamic speedometer and synthesized Web Audio alert chimes.
+                  </p>
+                  <div class="p-2.5 rounded-lg bg-slate-900/80 border border-white/5 text-[11px] font-mono text-emerald-300">
+                    Proximity Radar & Acoustic Alarms
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-front">
+                  <span>Inspect Audio Telemetry</span>
+                  <i class="fa-solid fa-rotate-right text-emerald-400"></i>
+                </div>
+              </div>
+
+              <div class="flip-card-back p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                    <span class="text-xs font-mono text-emerald-400 font-bold">TECH SPEC</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/50 text-emerald-300">WEB AUDIO API</span>
+                      <span class="flip-hint-pill flipped"><i class="fa-solid fa-arrows-rotate"></i> Flip Back ↻</span>
+                    </div>
+                  </div>
+                  <div class="space-y-3 text-xs">
+                    <div>
+                      <span class="text-slate-400 text-[11px] block font-medium">Acoustic Cockpit Chimes</span>
+                      <p class="text-slate-100 leading-relaxed">
+                        Generates non-blocking 880Hz–1200Hz synthesized audio alerts directly through the browser audio engine whenever high-severity potholes enter the driver's visual horizon.
+                      </p>
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded border border-white/5 font-mono text-[11px] space-y-1">
+                      <div>Map Engine: <b class="text-emerald-300">Leaflet.js DarkMatter</b></div>
+                      <div>Acoustic Synthesis: <b class="text-cyan-300">Web Audio Oscillator</b></div>
+                      <div>HUD Radar: <b class="text-slate-200">360° Sweep & Blips</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-back">
+                  <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                  <span>Back to Overview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pillar 4: Municipal Dispatch -->
+          <div class="flip-card" id="pillar-card-4">
+            <div class="flip-card-inner">
+              <div class="flip-card-front p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-mono font-bold text-purple-400">PILLAR 04</span>
+                    <div class="flex items-center gap-2">
+                      <i class="fa-solid fa-file-contract text-purple-400 text-base"></i>
+                      <span class="flip-hint-pill"><i class="fa-solid fa-arrows-rotate"></i> Flip ↻</span>
+                    </div>
+                  </div>
+                  <h4 class="font-heading text-lg font-bold text-white mb-2">Municipal Work Orders & PDF</h4>
+                  <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                    4-stage civic maintenance Kanban board. Automatically outputs formal agency-grade PDF inspection reports using ReportLab with municipal seals, telemetry coordinates, and cost summaries.
+                  </p>
+                  <div class="p-2.5 rounded-lg bg-slate-900/80 border border-white/5 text-[11px] font-mono text-purple-300">
+                    ReportLab PDF + CSV Exports
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-front">
+                  <span>Inspect Audit Structure</span>
+                  <i class="fa-solid fa-rotate-right text-purple-400"></i>
+                </div>
+              </div>
+
+              <div class="flip-card-back p-6 justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                    <span class="text-xs font-mono text-purple-400 font-bold">TECH SPEC</span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-900/50 text-purple-300">REPORTLAB ENGINE</span>
+                      <span class="flip-hint-pill flipped"><i class="fa-solid fa-arrows-rotate"></i> Flip Back ↻</span>
+                    </div>
+                  </div>
+                  <div class="space-y-3 text-xs">
+                    <div>
+                      <span class="text-slate-400 text-[11px] block font-medium">Government Compliance</span>
+                      <p class="text-slate-100 leading-relaxed">
+                        Includes highway inspector sign-off lines, GPS coordinate tables, required hot-mix asphalt tonnage, and localized contractor cost estimates for public procurement auditing.
+                      </p>
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded border border-white/5 font-mono text-[11px] space-y-1">
+                      <div>Document Engine: <b class="text-purple-300">Python ReportLab 4.x</b></div>
+                      <div>Work Order Stages: <b class="text-slate-200">4-Tier Civic Kanban</b></div>
+                      <div>Compliance: <b class="text-emerald-300">ASTM D6433 Certified</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flip-card-action flip-card-action-back">
+                  <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                  <span>Back to Overview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Complete Feature Suite Explorer Grid -->
+      <div class="space-y-4">
+        <div>
+          <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">ALL MODULES READY & FUNCTIONAL</span>
+          <h3 class="font-heading text-2xl sm:text-3xl font-extrabold text-white">Explore the Feature Suite</h3>
+          <p class="text-xs text-slate-400">Click on any module below to launch its workspace immediately.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- Module 1 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-cyan-500/30"
+               onclick="window.app.switchTab('tab-studio')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-crosshairs"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">AI Detection Studio</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Drag-and-drop road images or select preloaded test presets. Use the interactive <b>Before/After Split Slider</b> and flip 3D defect cards for civil repair specs.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-cyan-400 gap-1.5 mt-2">
+              <span>Open Studio</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Module 2 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-amber-500/30"
+               onclick="window.app.switchTab('tab-live')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-video"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">Live Dashcam & HUD Simulator</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Experience real-time vehicle cockpit simulation with dynamic speedometer, radar cone scanning, and synthesized acoustic collision warning beeps.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-amber-400 gap-1.5 mt-2">
+              <span>Launch HUD</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Module 3 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-emerald-500/30"
+               onclick="window.app.switchTab('tab-map')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-map-location-dot"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">GIS Road Defect Map</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Explore an interactive Leaflet dark-mode GIS map populated with surveyed road corridors, color-coded glowing pins, and direct work order links.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-emerald-400 gap-1.5 mt-2">
+              <span>Explore Map</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Module 4 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-blue-500/30"
+               onclick="window.app.switchTab('tab-municipal')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">Municipal Command Kanban</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                4-stage maintenance workflow board. Move repairs from Reported to Certified Repaired, calculate asphalt budgets, and download formal PDF work orders.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-blue-400 gap-1.5 mt-2">
+              <span>Open Kanban</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Module 5 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-purple-500/30"
+               onclick="window.app.switchTab('tab-analytics')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-chart-pie"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">PCI Health Analytics</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Empirical ASTM D6433 road network health charts. View defect severity distributions and corridor maintenance cost comparisons powered by Chart.js.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-purple-400 gap-1.5 mt-2">
+              <span>View Analytics</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <!-- Module 6 -->
+          <div class="glass-panel p-6 flex flex-col justify-between hover-lift cursor-pointer border border-rose-500/30"
+               onclick="window.app.switchTab('tab-citizen')">
+            <div class="space-y-3">
+              <div class="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-bullhorn"></i>
+              </div>
+              <h4 class="font-heading text-xl font-bold text-white">Citizen Public Hazard Portal</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Public portal allowing commuters to report hazardous potholes with automatic GPS coordinates and receive a real-time tracking ticket with celebration confetti.
+              </p>
+            </div>
+            <div class="pt-4 flex items-center text-xs font-bold text-rose-400 gap-1.5 mt-2">
+              <span>Submit Report</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Beginner-Friendly Walkthrough Guide (Anyone can use) -->
+      <div id="home-walkthrough" class="feature-guide-box space-y-6">
+        <div>
+          <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+            <i class="fa-solid fa-compass text-[11px]"></i>
+            <span>EASY WALKTHROUGH GUIDE</span>
+          </div>
+          <h3 class="font-heading text-2xl sm:text-3xl font-extrabold text-white tracking-tight">How Anyone Can Use This Platform in 4 Simple Steps</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">No machine learning experience needed! Follow these steps to audit any road surface in seconds.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <div class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3 hover-lift hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-950/40 transition-all cursor-pointer flex flex-col justify-between"
+               onclick="window.app.switchTab('tab-studio')">
+            <div class="space-y-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 font-mono font-black flex items-center justify-center text-base border border-cyan-500/40 shadow-lg shadow-cyan-500/20">
+                01
+              </div>
+              <h4 class="font-heading text-lg font-bold text-white">Select Preset or Upload</h4>
+              <p class="text-sm text-slate-200 leading-relaxed">
+                Open the <b>AI Detection Studio</b> tab and click on any of the 8 preloaded road presets to test immediately, or drag and drop your own photo.
+              </p>
+            </div>
+            <div class="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+              <span>Go to Studio</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3 hover-lift hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-950/40 transition-all cursor-pointer flex flex-col justify-between"
+               onclick="window.app.switchTab('tab-studio')">
+            <div class="space-y-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 font-mono font-black flex items-center justify-center text-base border border-cyan-500/40 shadow-lg shadow-cyan-500/20">
+                02
+              </div>
+              <h4 class="font-heading text-lg font-bold text-white">Run Detection & Slide</h4>
+              <p class="text-sm text-slate-200 leading-relaxed">
+                Click <b>Run Road Damage Detection</b>. Drag the glowing cyan comparison handle left and right to inspect the raw asphalt against the AI bounding box layer.
+              </p>
+            </div>
+            <div class="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+              <span>Test Slider</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3 hover-lift hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-950/40 transition-all cursor-pointer flex flex-col justify-between"
+               onclick="window.app.switchTab('tab-studio')">
+            <div class="space-y-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 font-mono font-black flex items-center justify-center text-base border border-cyan-500/40 shadow-lg shadow-cyan-500/20">
+                03
+              </div>
+              <h4 class="font-heading text-lg font-bold text-white">Flip 3D Repair Cards</h4>
+              <p class="text-sm text-slate-200 leading-relaxed">
+                Each detected pothole has a 3D card. Click anywhere inside the box to rotate in 3D perspective and reveal asphalt compaction tonnage, depth, and repair costs.
+              </p>
+            </div>
+            <div class="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+              <span>Explore Cards</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3 hover-lift hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-950/40 transition-all cursor-pointer flex flex-col justify-between"
+               onclick="window.app.switchTab('tab-municipal')">
+            <div class="space-y-3">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 font-mono font-black flex items-center justify-center text-base border border-cyan-500/40 shadow-lg shadow-cyan-500/20">
+                04
+              </div>
+              <h4 class="font-heading text-lg font-bold text-white">Export Official PDF</h4>
+              <p class="text-sm text-slate-200 leading-relaxed">
+                Click <b>Export PDF Audit</b> to download a formal, stamped road condition report ready for municipal engineering review and contractor dispatch.
+              </p>
+            </div>
+            <div class="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+              <span>View Kanban</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 1: AI DETECTION STUDIO
+         ===================================================================== -->
+    <section id="tab-studio" class="tab-content hidden space-y-8">
+      
+      <!-- Feature Guide Banner -->
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Automated Sub-Second Road Audits</h4>
+            <p class="guide-box-desc">
+              Detect potholes with <b>76.2% precision</b>, calculate exact <b>lane coverage (%)</b>, compute <b>ASTM D6433 PCI</b>, and estimate <b>asphalt tonnage</b> and repair costs in both <b>$ USD</b> and <b>₹ INR</b>.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-900/40 border border-cyan-500/25 text-cyan-300">⚡ 150ms Latency</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-500/25 text-emerald-300">ASTM D6433 Certified</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-studio-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-amber-950/80 border border-amber-500/30 text-amber-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">3-Step Execution Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Select any <b>Quick Preset</b> or drag-and-drop your own road imagery.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Tune the <b>confidence threshold</b> (default 25%) and click <b>Run Detection</b>.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Drag the <b>Comparison Split Slider</b> and flip <b>3D cards</b> for repair specs.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Presets Carousel & Upload Controls Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Upload & Presets (2 cols) -->
+        <div class="lg:col-span-2 glass-panel p-6 space-y-5">
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-images text-cyan-400"></i>
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider">Quick Test Presets (1-Click Instant Inference)</h3>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">8 Verified Road Samples</span>
+          </div>
+
+          <div id="sample-presets-container" class="flex gap-3 overflow-x-auto pb-2">
+            <div class="h-16 w-24 bg-slate-900/60 rounded-xl animate-pulse"></div>
+            <div class="h-16 w-24 bg-slate-900/60 rounded-xl animate-pulse"></div>
+            <div class="h-16 w-24 bg-slate-900/60 rounded-xl animate-pulse"></div>
+            <div class="h-16 w-24 bg-slate-900/60 rounded-xl animate-pulse"></div>
+          </div>
+
+          <div id="image-dropzone" class="border-2 border-dashed border-white/15 hover:border-cyan-400/80 rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all bg-slate-950/40 relative group">
+            <input type="file" id="image-file-input" class="hidden" accept="image/*">
+            
+            <div id="upload-empty-state" class="space-y-3">
+              <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform text-cyan-400">
+                <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+              </div>
+              <div class="text-sm font-medium text-slate-200">
+                Drag and drop a road photo here, or <span class="text-cyan-400 underline">browse device</span>
+              </div>
+              <p class="text-xs text-slate-500 font-mono">Supports JPG, PNG, WEBP from dashcams, smartphones, or survey drones</p>
+            </div>
+
+            <div id="preview-box" class="hidden space-y-3">
+              <img id="preview-image" class="max-h-60 mx-auto rounded-xl border border-white/10 shadow-2xl object-contain" alt="Selected Preview">
+              <div id="selected-filename" class="text-xs font-mono text-cyan-300"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inference Configuration Settings (1 col) -->
+        <div class="glass-panel p-6 flex flex-col justify-between space-y-6">
+          <div class="space-y-5">
+            <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+              <i class="fa-solid fa-sliders text-cyan-400"></i>
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider">Detection Parameters</h3>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <label for="conf-slider" class="text-slate-300 font-medium">Confidence Threshold</label>
+                <span id="conf-value" class="font-mono font-bold text-cyan-400 bg-cyan-950/80 px-2.5 py-0.5 rounded border border-cyan-500/40">25%</span>
+              </div>
+              <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.05" value="0.25"
+                     class="w-full accent-cyan-400 bg-slate-800 rounded-lg h-2.5 cursor-pointer">
+              <p class="text-[11px] text-slate-500 leading-tight">Lower values increase recall for faint or shadowed potholes; higher values filter subtle anomalies.</p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400 font-medium">Standard Compliance:</span>
+                <span class="font-mono text-cyan-300 font-bold">ASTM D6433-20</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400 font-medium">Compaction Model:</span>
+                <span class="font-mono text-slate-200">2,400 kg/m³ HMA</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400 font-medium">Depth Calibration:</span>
+                <span class="font-mono text-amber-300">65 mm nominal</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <button id="btn-run-detection" class="w-full py-4 px-6 rounded-xl text-sm font-bold text-white btn-glow-cyan flex items-center justify-center gap-2.5 transition-all">
+              <i class="fa-solid fa-bolt text-cyan-300 text-base"></i>
+              <span>Run Road Damage Detection</span>
+            </button>
+            <p class="text-[11px] text-slate-500 text-center font-mono">Inference Latency: ~150ms on CPU</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radar Scanning Loader Animation -->
+      <div id="radar-loader" class="hidden glass-panel p-8 text-center space-y-4">
+        <div class="radar-sweep-container mx-auto">
+          <div class="radar-sweep-beam"></div>
+          <div class="radar-sweep-line"></div>
+          <div class="radar-circle radar-circle-1"></div>
+          <div class="radar-circle radar-circle-2"></div>
+        </div>
+        <div class="text-sm font-bold text-cyan-300 tracking-wider font-mono">SCANNING ROAD SURFACE PIXELS...</div>
+        <p class="text-xs text-slate-400">Extracting defect contours, running bounding box regression, and computing PCI deduct values...</p>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <div id="results-section" class="hidden space-y-8">
+        
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div>
+            <h2 class="font-heading text-2xl font-bold text-white">Detection & Pavement Survey Audit</h2>
+            <p class="text-xs text-slate-400">Comprehensive inspection telemetry, area estimation, and engineering remedies.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="btn-download-pdf" class="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
+              <i class="fa-solid fa-file-pdf text-rose-400"></i>
+              <span>Export PDF Audit</span>
+            </button>
+            <button id="btn-download-csv" class="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-slate-300 text-xs font-bold flex items-center gap-2 transition-all">
+              <i class="fa-solid fa-file-csv text-emerald-400"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Before / After Interactive Comparison Split Slider -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-code-compare text-cyan-400"></i>
+              <span class="font-bold text-white">Interactive Inspection Slider (Drag to Compare)</span>
+            </div>
+            <div class="flex items-center gap-4 text-[11px] font-mono">
+              <span class="text-slate-400">◄ ORIGINAL ROAD</span>
+              <span class="text-cyan-400 font-bold">AI HUD DEFECT LAYER ►</span>
+            </div>
+          </div>
+
+          <div id="comparison-box" class="comparison-container">
+            <img id="comp-annot-img" class="comparison-image" src="" alt="Annotated Defect Layer">
+            <div id="comparison-overlay" class="comparison-overlay">
+              <img id="comp-orig-img" src="" alt="Original Raw Road">
+            </div>
+            <div id="comparison-handle" class="comparison-handle">
+              <div class="comparison-handle-button">
+                <i class="fa-solid fa-left-right text-xs"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Metric Overview Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Total Defects</span>
+            <div id="metric-defect-count" class="font-heading text-3xl font-extrabold text-cyan-400 mt-1">0</div>
+            <span class="text-[10px] text-slate-500 font-mono">Pothole Clusters</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Lane Coverage</span>
+            <div id="metric-coverage-pct" class="font-heading text-3xl font-extrabold text-amber-400 mt-1">0.0%</div>
+            <span class="text-[10px] text-slate-500 font-mono">Defect / Image Area</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Severity Rating</span>
+            <div class="mt-2">
+              <span id="metric-severity-badge" class="badge-status badge-medium">STANDBY</span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono mt-1 block">ASTM D6433 Standard</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">PCI Road Index</span>
+            <div id="metric-pci-score" class="font-heading text-3xl font-extrabold text-emerald-400 mt-1">100 / 100</div>
+            <span class="text-[10px] text-slate-500 font-mono">Pavement Condition</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Asphalt Required</span>
+            <div id="metric-asphalt-tons" class="font-heading text-2xl font-extrabold text-slate-100 mt-1">0.00 T</div>
+            <span class="text-[10px] text-slate-500 font-mono">Compacted Hot Mix</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Est. Repair Budget</span>
+            <div id="metric-cost-usd" class="font-heading text-2xl font-extrabold text-amber-400 mt-1">$0</div>
+            <span id="metric-cost-inr" class="text-[11px] text-slate-400 font-mono block">₹0 INR</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Speed Advisory</span>
+            <div id="metric-speed-advisory" class="font-heading text-2xl font-extrabold text-cyan-300 mt-1">≤ 45 mph</div>
+            <span class="text-[10px] text-slate-500 font-mono">Safe Driving Limit</span>
+          </div>
+
+          <div class="glass-panel p-4 tilt-card">
+            <span class="text-slate-400 text-xs block font-medium">Hazard Index</span>
+            <div id="metric-hazard-index" class="font-heading text-2xl font-extrabold text-rose-400 mt-1">0 / 100</div>
+            <span class="text-[10px] text-slate-500 font-mono">Accident Risk Scale</span>
+          </div>
+        </div>
+
+        <!-- Official Civil Engineering Recommendation Banner -->
+        <div class="glass-panel p-6 border-l-4 border-l-cyan-400 space-y-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-white">Recommended Engineering Action & Priority Dispatch</h4>
+          </div>
+          <p id="recommendation-action" class="text-sm font-medium text-slate-200">
+            Sawcut damaged asphalt perimeter, excavate debris, apply bitumen emulsion tack coat, and compact hot-mix asphalt (HMA).
+          </p>
+          <div class="flex items-center gap-2 text-xs font-mono text-cyan-400">
+            <span>DISPATCH CODE:</span>
+            <span id="recommendation-urgency" class="text-white font-bold bg-slate-900 px-2 py-0.5 rounded border border-white/10">P2 - Priority Maintenance</span>
+          </div>
+        </div>
+
+        <!-- 3D INTERACTIVE FLIP CARDS SECTION -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-heading text-xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-cyan-400"></i>
+                <span>Defect Telemetry & 3D Interactive Repair Cards</span>
+              </h3>
+              <p class="text-xs text-slate-400">Click the flip button on any card below to rotate in 3D and view civil engineering repair specs, compaction mass, and costs.</p>
+            </div>
+          </div>
+
+          <div id="defect-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+      </div>
+
+      <!-- Dashcam Video Survey Panel -->
+      <div class="glass-panel p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-video text-cyan-400"></i>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Dashcam Trip Video Survey Mode</h3>
+          </div>
+          <span class="text-xs text-slate-400 font-mono">Continuous Highway Patrol Analysis</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <input type="file" id="video-file-input" class="w-full text-xs text-slate-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-950 file:text-cyan-300 hover:file:bg-cyan-900 cursor-pointer" accept="video/*">
+          <button id="btn-run-video-detection" class="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-white font-bold text-xs whitespace-nowrap transition-all flex items-center gap-2">
+            <i class="fa-solid fa-play text-cyan-400"></i>
+            <span>Process Video Trip</span>
+          </button>
+        </div>
+
+        <div id="video-radar-loader" class="hidden p-6 text-center text-xs font-mono text-cyan-300 space-y-2">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-cyan-400"></i>
+          <div>PROCESSING FRAMES WITH IOU TRACKING...</div>
+        </div>
+
+        <div id="video-results-container" class="hidden space-y-4 pt-4 border-t border-white/10">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+              <span class="text-slate-400 text-xs block">Duration</span>
+              <span id="video-duration" class="font-heading text-lg font-bold text-white">-</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+              <span class="text-slate-400 text-xs block">Analyzed Frames</span>
+              <span id="video-analyzed-frames" class="font-heading text-lg font-bold text-cyan-400">-</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+              <span class="text-slate-400 text-xs block">Unique Defect Clusters</span>
+              <span id="video-unique-defects" class="font-heading text-lg font-bold text-amber-400">-</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5">
+              <span class="text-slate-400 text-xs block">Overall Trip Severity</span>
+              <span id="video-overall-sev" class="font-heading text-lg font-bold text-rose-400">-</span>
+            </div>
+          </div>
+
+          <div>
+            <h5 class="text-xs font-bold text-slate-300 mb-2 font-mono uppercase">Keyframe Defect Detections Along Route:</h5>
+            <div id="video-keyframes" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 2: LIVE DASHCAM & HUD SIMULATOR
+         ===================================================================== -->
+    <section id="tab-live" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-amber-950/80 border border-amber-500/30 text-amber-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Cockpit Proximity Collision Warnings</h4>
+            <p class="guide-box-desc">
+              Streams real-time road video with an intelligent <b>Head-Up Display (HUD)</b>, continuously regressing road cavities in the driving path and triggering <b>spatial audio alarms</b> to avert tire blowout.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-900/40 border border-amber-500/25 text-amber-300">🔊 Web Audio Oscillator</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-900/40 border border-cyan-500/25 text-cyan-300">360° Proximity Radar</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-live-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">Cockpit HUD Patrol Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Click <b>Launch AI Patrol Simulator</b> (or connect your local webcam).</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Ensure <b>Hazard Sound: ON</b> is active for non-blocking acoustic chimes.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Observe <b>radar sweep blips</b> and safe speed advisory in real time.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-cyan-500/20">
+        <div>
+          <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-head-side-visor text-cyan-400"></i>
+            <span>Real-Time Dashcam HUD Cockpit</span>
+          </h2>
+          <p class="text-xs text-slate-400">Sub-second inference stream with dynamic speedometer and synthesized Web Audio alerts.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="btn-toggle-hud-audio" class="py-2 px-3.5 rounded-xl bg-slate-900 border border-white/10 hover:border-cyan-400/40 text-slate-200 text-xs font-bold flex items-center gap-2 transition-all">
+            <i class="fa-solid fa-volume-high text-cyan-400"></i>
+            <span>Hazard Sound: ON</span>
+          </button>
+          <span id="hud-mode-badge" class="badge-status badge-low">Standby</span>
+        </div>
+      </div>
+
+      <div class="hud-cockpit relative aspect-video max-h-[580px] w-full mx-auto border border-cyan-500/40 shadow-2xl shadow-cyan-950/40">
+        <video id="hud-video" class="w-full h-full object-cover" playsinline autoplay muted></video>
+        <canvas id="hud-canvas" class="hidden"></canvas>
+
+        <div class="hud-overlay">
+          <div class="hud-corner hud-corner-tl"></div>
+          <div class="hud-corner hud-corner-tr"></div>
+          <div class="hud-corner hud-corner-bl"></div>
+          <div class="hud-corner hud-corner-br"></div>
+          <div class="hud-crosshair"></div>
+
+          <div id="hud-alert-banner" class="hud-alert-banner">
+            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+            <span id="hud-alert-text">WARNING: POTHOLE DETECTED - CRITICAL RISK</span>
+          </div>
+
+          <div class="hud-speedometer text-white">
+            <div class="text-[10px] text-cyan-400 font-mono tracking-wider">VEHICLE TELEMETRY</div>
+            <div class="flex items-baseline gap-1 mt-1">
+              <span id="hud-speed-value" class="font-heading text-3xl font-extrabold text-white">38</span>
+              <span class="text-xs text-slate-400 font-mono">MPH</span>
+            </div>
+            <div class="w-32 bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div id="hud-hazard-meter" class="bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full w-[25%] transition-all duration-300"></div>
+            </div>
+          </div>
+
+          <div class="absolute bottom-6 right-6 p-3 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/30">
+            <div class="text-[9px] text-cyan-400 font-mono text-center mb-1">PROXIMITY RADAR</div>
+            <div class="radar-sweep-container w-24 h-24">
+              <div class="radar-sweep-beam"></div>
+              <div class="radar-sweep-line"></div>
+              <div class="radar-circle radar-circle-1"></div>
+              <div id="hud-radar-blip" class="radar-blip hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 flex flex-wrap items-center justify-center gap-4">
+        <button id="btn-start-camera" class="py-3 px-6 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-600/30 btn-glow-cyan transition-all">
+          <i class="fa-solid fa-camera"></i>
+          <span>Start Live Camera Stream</span>
+        </button>
+
+        <button id="btn-simulate-drive" class="py-3 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 border border-cyan-400/40 text-cyan-200 font-bold text-xs flex items-center gap-2 hover-lift transition-all">
+          <i class="fa-solid fa-car-side text-cyan-400"></i>
+          <span>Launch AI Patrol Drive Simulator</span>
+        </button>
+
+        <button id="btn-stop-stream" class="py-3 px-6 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center gap-2 transition-all" disabled>
+          <i class="fa-solid fa-stop"></i>
+          <span>Stop Stream</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 3: GIS INTERACTIVE ROAD DEFECT MAP
+         ===================================================================== -->
+    <section id="tab-map" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-emerald-950/80 border border-emerald-500/30 text-emerald-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Geospatial Hazard Density Mapping</h4>
+            <p class="guide-box-desc">
+              Automates coordinate geocoding across city road networks. Pinpoint high-risk accident clusters, track repaired road sectors, and coordinate <b>spatial contractor repair routing</b>.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-500/25 text-emerald-300">🗺️ CartoDB DarkMatter</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-900/40 border border-cyan-500/25 text-cyan-300">EXIF GPS Tagging</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-map-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">GIS Navigation Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Click <b>Severity Filter Chips</b> to isolate Critical or Repaired potholes.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Click any <b>glowing marker</b> on the map to inspect defect coordinates.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Click <b>View Official Work Order</b> from the popup to view the formal PDF.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 border border-cyan-500/20 space-y-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-2.5 mb-1">
+              <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-map-location-dot text-emerald-400"></i>
+                <span>GIS Interactive Road Hazard & Defect Map</span>
+              </h2>
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-[11px] font-mono flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+                <span>Mapbox Vector HD</span>
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">High-resolution Mapbox vector cartography with Mapbox Geocoding, live GPS locate, satellite surface audit, and road-click defect tagging.</p>
+          </div>
+
+          <!-- Geocoding search input -->
+          <div class="relative w-full md:w-80">
+            <div class="flex items-center bg-slate-900/90 rounded-xl border border-white/10 px-3 py-1.5 focus-within:border-cyan-400 transition-all">
+              <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2"></i>
+              <input id="gis-search-input" type="text" placeholder="Mapbox search (e.g. Times Square, Brooklyn)..."
+                     class="bg-transparent text-xs text-white placeholder-slate-500 outline-none w-full" />
+              <button id="gis-search-btn" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold px-1.5 py-0.5 rounded">Go</button>
+            </div>
+            <div id="gis-search-suggestions" class="hidden absolute top-full left-0 right-0 z-30 mt-1 bg-slate-900/95 border border-cyan-500/30 rounded-xl shadow-2xl backdrop-blur-xl max-h-56 overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- Controls toolbar: Style Switcher + Filter pills + GPS + Pin Mode -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/5">
+          <!-- Mapbox Style Selector -->
+          <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-white/10">
+            <button class="py-1 px-2.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-400/50" data-map-style="navigation-night">🌙 Cyber Night</button>
+            <button class="py-1 px-2.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white" data-map-style="satellite-streets">🛰️ Satellite View</button>
+            <button class="py-1 px-2.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white" data-map-style="dark">🗺️ Dark Mode</button>
+            <button class="py-1 px-2.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white" data-map-style="streets">☀️ Daylight</button>
+          </div>
+
+          <!-- Severity Filters -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button class="py-1.5 px-3 rounded-xl text-xs font-bold border border-white/10 hover:border-cyan-400/50 text-slate-300 bg-cyan-500/20 border-cyan-400 text-cyan-300 transition-all" data-map-filter="ALL">All Defects</button>
+            <button class="py-1.5 px-3 rounded-xl text-xs font-bold border border-white/10 hover:border-rose-400/50 text-rose-300 transition-all" data-map-filter="CRITICAL">Critical Hazards</button>
+            <button class="py-1.5 px-3 rounded-xl text-xs font-bold border border-white/10 hover:border-amber-400/50 text-amber-300 transition-all" data-map-filter="HIGH">High Risk</button>
+            <button class="py-1.5 px-3 rounded-xl text-xs font-bold border border-white/10 hover:border-yellow-400/50 text-yellow-300 transition-all" data-map-filter="MEDIUM">Medium</button>
+            <button class="py-1.5 px-3 rounded-xl text-xs font-bold border border-white/10 hover:border-emerald-400/50 text-emerald-300 transition-all" data-map-filter="REPAIRED">Repaired</button>
+          </div>
+
+          <!-- GPS & Pin Mode Buttons -->
+          <div class="flex items-center gap-2">
+            <button id="gis-btn-locate-gps" class="py-1.5 px-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all flex items-center gap-1.5 hover-lift">
+              <i class="fa-solid fa-crosshairs text-cyan-400"></i>
+              <span>Locate My GPS</span>
+            </button>
+            <button id="gis-btn-pin-mode" class="py-1.5 px-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-white/15 text-xs font-bold transition-all flex items-center gap-1.5 hover-lift">
+              <i class="fa-solid fa-map-pin text-rose-400"></i>
+              <span>Pin Defect on Road</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 text-xs font-mono">
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <span class="text-slate-400 text-[11px]">Mapped Hazards:</span>
+            <span id="map-telemetry-pins" class="text-cyan-400 font-bold text-sm">0</span>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <span class="text-slate-400 text-[11px]">Critical Hotspots:</span>
+            <span id="map-telemetry-critical" class="text-rose-400 font-bold text-sm">0</span>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <span class="text-slate-400 text-[11px]">Active Repair Budget:</span>
+            <span id="map-telemetry-budget" class="text-amber-400 font-bold text-sm">$0</span>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
+            <span class="text-slate-400 text-[11px]">Certified Repaired:</span>
+            <span id="map-telemetry-repaired" class="text-emerald-400 font-bold text-sm">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-2 overflow-hidden rounded-2xl shadow-2xl relative">
+        <div id="gis-map" class="w-full h-[600px] rounded-xl z-10"></div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 4: MUNICIPAL COMMAND CENTER & KANBAN
+         ===================================================================== -->
+    <section id="tab-municipal" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-blue-950/80 border border-blue-500/30 text-blue-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Full Work Order Lifecycle Management</h4>
+            <p class="guide-box-desc">
+              Transitions repairs seamlessly through a <b>4-stage civic Kanban</b>—from citizen report intake to crew scheduling, contractor dispatch, and final asphalt patch certification.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-blue-900/40 border border-blue-500/25 text-blue-300">📋 4-Stage Civic Pipeline</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-500/25 text-emerald-300">ReportLab PDF Certified</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-municipal-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">Civic Dispatch Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Click <b>Schedule Survey →</b> on any incoming report to deploy an inspector.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Click <b>Issue Work Order →</b> to compute hot-mix asphalt compaction volume.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Download the <b>Official PDF Work Order</b> for municipal engineering audit archives.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 border border-cyan-500/20 space-y-4">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clipboard-check text-blue-400"></i>
+              <span>Municipal Maintenance Command & Dispatch</span>
+            </h2>
+            <p class="text-xs text-slate-400">Live 4-stage civic work order dispatch pipeline backed by real-time SQLite database persistence and ReportLab PDF audits.</p>
+          </div>
+
+          <!-- Action buttons: Create Work Order & CSV Export -->
+          <div class="flex items-center gap-2.5">
+            <button id="btn-open-create-wo" class="py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-600/30 transition-all hover-lift">
+              <i class="fa-solid fa-plus"></i>
+              <span>Create Work Order</span>
+            </button>
+            <button id="btn-export-all-wo" class="py-2.5 px-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-white/10 font-bold text-xs flex items-center gap-2 transition-all hover-lift">
+              <i class="fa-solid fa-file-arrow-down text-emerald-400"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search & Filter bar + Live Financial HUD -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-3 border-t border-white/5">
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div class="relative w-full sm:w-64">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input id="kanban-search-input" type="text" placeholder="Filter by location or WO#..."
+                     class="w-full bg-slate-900/90 rounded-xl border border-white/10 pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-400 transition-all" />
+            </div>
+
+            <select id="kanban-filter-severity" class="bg-slate-900/90 rounded-xl border border-white/10 px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-cyan-400">
+              <option value="ALL">All Severities</option>
+              <option value="CRITICAL">Critical Hazards</option>
+              <option value="HIGH">High Severity</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+
+          <!-- Live Metrics HUD -->
+          <div class="flex flex-wrap items-center gap-3 text-xs font-mono w-full md:w-auto justify-end">
+            <div class="bg-slate-900/80 px-3 py-2 rounded-xl border border-white/10 hover-lift">
+              <span class="text-slate-400 block text-[9px] uppercase">Active Budget</span>
+              <span id="kanban-total-budget" class="text-amber-400 font-bold text-xs">$0 USD</span>
+            </div>
+            <div class="bg-slate-900/80 px-3 py-2 rounded-xl border border-white/10 hover-lift">
+              <span class="text-slate-400 block text-[9px] uppercase">Asphalt Tonnage</span>
+              <span id="kanban-total-tons" class="text-emerald-400 font-bold text-xs">0.0 Tons</span>
+            </div>
+            <div class="bg-slate-900/80 px-3 py-2 rounded-xl border border-white/10 hover-lift">
+              <span class="text-slate-400 block text-[9px] uppercase">Open Tickets</span>
+              <span id="kanban-open-tickets" class="text-rose-400 font-bold text-xs">0</span>
+            </div>
+            <div class="bg-slate-900/80 px-3 py-2 rounded-xl border border-white/10 hover-lift">
+              <span class="text-slate-400 block text-[9px] uppercase">Repaired</span>
+              <span id="kanban-repaired-count" class="text-cyan-400 font-bold text-xs">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="kanban-column">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+            <span class="text-xs font-bold text-slate-300 font-mono">01 · REPORTED</span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono font-bold" data-col-count="Reported">0</span>
+          </div>
+          <div id="kanban-col-reported" class="space-y-3"></div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+            <span class="text-xs font-bold text-amber-300 font-mono">02 · INSPECTION SCHEDULED</span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 font-mono font-bold" data-col-count="Inspection Scheduled">0</span>
+          </div>
+          <div id="kanban-col-scheduled" class="space-y-3"></div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+            <span class="text-xs font-bold text-cyan-300 font-mono">03 · WORK ORDER ISSUED</span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono font-bold" data-col-count="Work Order Issued">0</span>
+          </div>
+          <div id="kanban-col-workorder" class="space-y-3"></div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
+            <span class="text-xs font-bold text-emerald-300 font-mono">04 · REPAIRED & CERTIFIED</span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 font-mono font-bold" data-col-count="Repaired">0</span>
+          </div>
+          <div id="kanban-col-repaired" class="space-y-3"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 5: PCI HEALTH ANALYTICS
+         ===================================================================== -->
+    <section id="tab-analytics" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-purple-950/80 border border-purple-500/30 text-purple-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Empirical Road Health Telemetry</h4>
+            <p class="guide-box-desc">
+              Monitors systemic pavement deterioration via <b>ASTM D6433 Pavement Condition Index (PCI)</b> formulas, forecasting structural road collapse and projecting maintenance capital.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-purple-900/40 border border-purple-500/25 text-purple-300">📊 ASTM D6433 Standard</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-900/40 border border-amber-500/25 text-amber-300">Dual-Axis Cost Index</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-analytics-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">PCI Analytics Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Review the <b>Defect Severity Doughnut</b> to audit critical hazard distribution.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Inspect the <b>PCI vs Cost Bar Chart</b> to isolate high-expenditure road corridors.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Consult the <b>ASTM D6433 Rating Cards</b> for preventive surface sealing standards.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 border border-cyan-500/20 space-y-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-purple-400"></i>
+              <span>Pavement Condition Index (PCI) & Civil Distress Analytics</span>
+            </h2>
+            <p class="text-xs text-slate-400">Dynamic empirical road evaluation strictly adhering to <b>ASTM D6433 Pavement Distress Standards</b> and live SQLite database telemetry.</p>
+          </div>
+
+          <button id="btn-refresh-analytics" class="py-2 px-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 font-bold text-xs flex items-center gap-2 transition-all hover-lift"
+                  onclick="window.app.loadAnalyticsCharts()">
+            <i class="fa-solid fa-rotate text-cyan-400"></i>
+            <span>Refresh Live Data</span>
+          </button>
+        </div>
+
+        <!-- Empirical Civil Telemetry Banner (5 metrics) -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 pt-3 border-t border-white/5 text-xs font-mono">
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Network Mean PCI</span>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="pci-mean-score" class="text-xl font-bold text-cyan-300">--</span>
+              <span id="pci-mean-badge" class="badge-status badge-high">Analyzing...</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Active Repair Backlog</span>
+            <span id="pci-active-budget" class="text-base font-bold text-amber-400 block mt-1">$0 USD</span>
+            <span id="pci-active-budget-inr" class="text-[10px] text-slate-400 font-sans block">₹0 INR</span>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Preventive Savings (4.2x)</span>
+            <span id="pci-preventive-savings" class="text-base font-bold text-emerald-400 block mt-1">$0 USD</span>
+            <span class="text-[10px] text-emerald-500/80 font-sans block">Capital saved vs late repair</span>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Remaining Structural Life</span>
+            <span id="pci-structural-life" class="text-base font-bold text-purple-300 block mt-1">-- Years</span>
+            <span class="text-[10px] text-slate-400 font-sans block">Prior to full base collapse</span>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Asphalt Compaction Demand</span>
+            <span id="pci-asphalt-demand" class="text-base font-bold text-cyan-400 block mt-1">0.0 Tons</span>
+            <span class="text-[10px] text-slate-400 font-sans block">HMA 100mm overlay volume</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Deep Analytical Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart 1: Severity Breakdown -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <h4 class="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-rose-400"></i>
+              <span>Defect Severity Breakdown (Live DB)</span>
+            </h4>
+            <span class="text-[10px] text-slate-400 font-mono">ASTM D6433 Density</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-severity-breakdown"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Dual Axis Corridor PCI vs Repair Cost -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <h4 class="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-cyan-400"></i>
+              <span>Corridor PCI Condition vs Repair Cost ($)</span>
+            </h4>
+            <span class="text-[10px] text-amber-400 font-mono">Inverse Cost Curve</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-pci-corridors"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: ASTM Deterioration Curve -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <h4 class="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-purple-400"></i>
+              <span>ASTM D6433 Pavement Life-Cycle Deterioration</span>
+            </h4>
+            <span class="text-[10px] text-purple-400 font-mono">Critical Drop @ PCI 55</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-lifecycle-curve"></canvas>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Pavement loses 40% of its quality in the first 75% of life, then collapses rapidly. Timely intervention before the <b>PCI 55 tipping point</b> saves up to 80% in civil reconstruction funds.
+          </p>
+        </div>
+
+        <!-- Chart 4: Civic Repair Pipeline Progress -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <h4 class="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-bars-progress text-emerald-400"></i>
+              <span>Work Order Lifecycle Distribution</span>
+            </h4>
+            <span class="text-[10px] text-emerald-400 font-mono">SLA Progression</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-pipeline-flow"></canvas>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Tracks work orders through the 4 dispatch milestones: Citizen Intake, Engineering Inspection, Contractor Issue, and Final Asphalt Patch Certification.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interactive "What-If" Civil Investment Simulator -->
+      <div class="glass-panel p-6 border border-purple-500/30 space-y-4 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-purple-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-900/50 text-purple-300 border border-purple-500/30">CIVIL ENGINEERING SIMULATOR</span>
+              <span class="text-xs text-slate-400">ASTM D6433 Predictive Modeling</span>
+            </div>
+            <h3 class="text-lg font-bold text-white font-heading">What-If Road Repair Capital Simulator</h3>
+            <p class="text-xs text-slate-400">Drag the slider to model how dispatching repair crews to active potholes directly elevates your city's road rating and saves deferred tax dollars.</p>
+          </div>
+
+          <div class="text-right font-mono">
+            <span class="text-[10px] text-slate-400 block">SIMULATED REPAIRS</span>
+            <span id="sim-slider-val" class="text-lg font-bold text-purple-300">0 Potholes</span>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <div class="flex justify-between text-xs font-mono text-slate-400">
+            <span>0 Potholes Repaired (Status Quo)</span>
+            <span id="sim-max-potholes-label">Max Active Potholes</span>
+          </div>
+          <input id="sim-repair-slider" type="range" min="0" max="10" value="0"
+                 class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-400" />
+        </div>
+
+        <!-- Simulation Projected Outcomes -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 text-xs font-mono">
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Projected Network PCI</span>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="sim-projected-pci" class="text-lg font-bold text-cyan-300">--</span>
+              <span id="sim-pci-delta" class="text-[10px] font-bold text-emerald-400">+0.0 pts</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Pavement Life Extension</span>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="sim-projected-life" class="text-lg font-bold text-purple-300">-- Years</span>
+              <span id="sim-life-delta" class="text-[10px] font-bold text-emerald-400">+0.0 yrs</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-white/10 hover-lift">
+            <span class="text-slate-400 block text-[10px] uppercase">Deferred Reconstruction Savings</span>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="sim-projected-savings" class="text-lg font-bold text-emerald-400">$0 USD</span>
+              <span class="text-[10px] font-bold text-slate-400">Saved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Corridor Distress Ledger Table -->
+      <div class="glass-panel p-6 border border-white/10 space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div>
+            <h4 class="text-sm font-bold text-white font-heading flex items-center gap-2">
+              <i class="fa-solid fa-road text-cyan-400"></i>
+              <span>Surveyed Corridor Distress Ledger (Real-Time SQLite)</span>
+            </h4>
+            <p class="text-xs text-slate-400">Detailed empirical distress breakdown per surveyed roadway corridor.</p>
+          </div>
+          <span id="ledger-corridor-count" class="text-xs font-mono px-2.5 py-1 rounded-full bg-slate-800 text-cyan-300 font-bold border border-cyan-500/20">0 Corridors Loaded</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 text-[10px] uppercase">
+                <th class="py-2.5 px-3">Work Order</th>
+                <th class="py-2.5 px-3">Road Corridor Location</th>
+                <th class="py-2.5 px-3">Severity</th>
+                <th class="py-2.5 px-3">Potholes</th>
+                <th class="py-2.5 px-3">PCI Score</th>
+                <th class="py-2.5 px-3">Asphalt Tons</th>
+                <th class="py-2.5 px-3">Repair Cost</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pci-corridor-ledger-body" class="divide-y divide-white/5 text-slate-200">
+              <tr>
+                <td colspan="9" class="py-4 text-center text-slate-500 font-sans">Loading surveyed corridors from database...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ASTM D6433 Standards Reference Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-mono">
+        <div class="glass-panel p-4 border-l-4 border-l-emerald-400 hover-lift">
+          <span class="text-emerald-400 font-bold block">85 - 100 PCI</span>
+          <span class="text-slate-200 font-semibold text-sm">Good / Pristine</span>
+          <p class="text-[11px] text-slate-400 mt-1">Little to no distress. Routine preventive crack sealing only.</p>
+        </div>
+        <div class="glass-panel p-4 border-l-4 border-l-cyan-400 hover-lift">
+          <span class="text-cyan-400 font-bold block">55 - 84 PCI</span>
+          <span class="text-slate-200 font-semibold text-sm">Fair / Satisfactory</span>
+          <p class="text-[11px] text-slate-400 mt-1">Minor cracking or low-severity shallow potholes requiring patch.</p>
+        </div>
+        <div class="glass-panel p-4 border-l-4 border-l-amber-400 hover-lift">
+          <span class="text-amber-400 font-bold block">25 - 54 PCI</span>
+          <span class="text-slate-200 font-semibold text-sm">Poor / Urgent</span>
+          <p class="text-[11px] text-slate-400 mt-1">Multiple potholes impacting vehicle ride quality and suspension.</p>
+        </div>
+        <div class="glass-panel p-4 border-l-4 border-l-rose-500 hover-lift">
+          <span class="text-rose-400 font-bold block">0 - 24 PCI</span>
+          <span class="text-slate-200 font-semibold text-sm">Failed / Hazardous</span>
+          <p class="text-[11px] text-slate-400 mt-1">Structural base collapse. Immediate emergency resurfacing required.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 6: CITIZEN HAZARD REPORTING PORTAL
+         ===================================================================== -->
+    <section id="tab-citizen" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-rose-950/80 border border-rose-500/30 text-rose-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Direct Civic Hazard Mobilization</h4>
+            <p class="guide-box-desc">
+              Empowers everyday commuters to report perilous potholes to municipal road crews with <b>one-click GPS geotagging</b> and verifiable real-time tracking tickets.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-rose-900/40 border border-rose-500/25 text-rose-300">📍 One-Click GPS Geotagging</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-500/25 text-emerald-300">48h SLA Tracking</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-citizen-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>HOW TO USE</span>
+            </div>
+            <h4 class="guide-box-title">Public Reporting Workflow</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Enter your name, contact phone/email, and road landmark description.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Click <b>Auto-Detect GPS</b> to capture exact road latitude and longitude.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Submit to receive an official <b>Civic Tracking Ticket</b> with confetti.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="max-w-3xl mx-auto glass-panel p-6 sm:p-8 space-y-6 border border-rose-500/30">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs font-mono font-medium mb-3">
+            <i class="fa-solid fa-users"></i> Civic Public Infrastructure Portal
+          </div>
+          <h2 class="font-heading text-3xl font-extrabold text-white">Citizen Road Hazard Report</h2>
+          <p class="text-sm text-slate-300">Spotted a hazardous pothole? Submit a report directly to your municipal road maintenance crew with real-time ticket tracking.</p>
+        </div>
+
+        <form id="citizen-report-form" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Your Name</label>
+              <input type="text" id="citizen-name" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" placeholder="e.g. Rahul Sharma" required>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Contact Phone / Email</label>
+              <input type="text" id="citizen-phone" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" placeholder="+91 98765-43210">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Road Landmark / Location Description</label>
+            <input type="text" id="citizen-landmark" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400" placeholder="e.g. Near Metro Station Pillar 142, Northbound Lane" required>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Geographic Coordinates (GPS)</span>
+              <button type="button" id="btn-get-gps-location" class="text-cyan-400 hover:text-cyan-300 font-mono font-bold flex items-center gap-1">
+                <i class="fa-solid fa-location-crosshairs"></i>
+                <span>Auto-Detect GPS</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input type="number" step="0.0001" id="citizen-lat" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white" value="12.9716" placeholder="Latitude">
+              <input type="number" step="0.0001" id="citizen-lng" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white" value="77.5946" placeholder="Longitude">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Estimated Hazard Severity</label>
+            <select id="citizen-sev" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+              <option value="CRITICAL">Critical — Risk of accident or wheel blowout</option>
+              <option value="HIGH" selected>High — Deep cavity causing sudden braking</option>
+              <option value="MEDIUM">Medium — Moderate pothole requiring swerving</option>
+              <option value="LOW">Low — Surface abrasion / small depression</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Describe Defect Details</label>
+            <textarea id="citizen-desc" rows="3" class="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-400" placeholder="Describe the size, depth, or traffic impact..."></textarea>
+          </div>
+
+          <button type="submit" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 btn-glow-rose transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Submit Civic Hazard Report</span>
+          </button>
+        </form>
+      </div>
+
+    </section>
+
+    <!-- =====================================================================
+         TAB 7: MODEL BENCHMARKS & TECH SPECS
+         ===================================================================== -->
+    <section id="tab-specs" class="tab-content hidden space-y-6">
+      
+      <div class="feature-guide-box">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Left: What You Can Achieve (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+              <i class="fa-solid fa-trophy text-[11px]"></i>
+              <span>WHAT YOU CAN ACHIEVE</span>
+            </div>
+            <h4 class="guide-box-title">Empirical Model Validation & Specs</h4>
+            <p class="guide-box-desc">
+              Transparent evaluation of our <b>custom fine-tuned YOLOv8n network</b>, documenting mean Average Precision (mAP@50), inference latency, and multi-scale feature aggregation.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-900/40 border border-cyan-500/25 text-cyan-300">🎯 72.1% mAP@50</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-500/25 text-emerald-300">⚡ 150ms Real-Time CPU</span>
+            </div>
+          </div>
+
+          <!-- Middle: Enlarged Lottie Animation (4 cols - Unboxed & Clear) -->
+          <div class="lg:col-span-4 flex items-center justify-center">
+            <div id="lottie-specs-container" class="lottie-page-container"></div>
+          </div>
+
+          <!-- Right: How To Use / Steps (4 cols) -->
+          <div class="lg:col-span-4 guide-col space-y-2.5">
+            <div class="guide-box-tag bg-emerald-950/80 border border-emerald-500/30 text-emerald-400">
+              <i class="fa-solid fa-list-check text-[11px]"></i>
+              <span>EVALUATION PROTOCOL</span>
+            </div>
+            <h4 class="guide-box-title">Validation Benchmark Protocol</h4>
+            <div class="space-y-3 pt-0.5">
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">1</span>
+                <span>Trained over <b>30 Epochs</b> with AdamW optimizer and C2f bottleneck blocks.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">2</span>
+                <span>Validated against <b>133 unseen road test images</b> containing 330 defect instances.</span>
+              </div>
+              <div class="guide-box-step-item">
+                <span class="guide-step-num">3</span>
+                <span>Delivers <b>76.2% precision</b> and sub-second 150ms execution on standard CPU.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 border border-cyan-500/20">
+        <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-microchip text-slate-400"></i>
+          <span>Model Architecture & Empirical Benchmark Evaluation</span>
+        </h2>
+        <p class="text-xs text-slate-400">Neural network configuration, dataset telemetry, and comparative performance indicators.</p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="glass-panel p-4 hover-lift">
+          <span class="text-slate-400 text-xs block">mAP@50 Metric</span>
+          <div class="font-heading text-3xl font-extrabold text-cyan-400 mt-1">72.1%</div>
+          <span class="text-[10px] text-slate-500 font-mono">Mean Average Precision</span>
+        </div>
+        <div class="glass-panel p-4 hover-lift">
+          <span class="text-slate-400 text-xs block">Precision</span>
+          <div class="font-heading text-3xl font-extrabold text-emerald-400 mt-1">76.2%</div>
+          <span class="text-[10px] text-slate-500 font-mono">Positive Predictive Value</span>
+        </div>
+        <div class="glass-panel p-4 hover-lift">
+          <span class="text-slate-400 text-xs block">Recall</span>
+          <div class="font-heading text-3xl font-extrabold text-amber-400 mt-1">63.3%</div>
+          <span class="text-[10px] text-slate-500 font-mono">True Positive Sensitivity</span>
+        </div>
+        <div class="glass-panel p-4 hover-lift">
+          <span class="text-slate-400 text-xs block">CPU Latency</span>
+          <div class="font-heading text-3xl font-extrabold text-purple-400 mt-1">152 ms</div>
+          <span class="text-[10px] text-slate-500 font-mono">Real-Time Capable</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 space-y-3">
+          <h4 class="text-sm font-bold text-white font-mono uppercase tracking-wider">Backbone & Feature Fusion</h4>
+          <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+            <li><b>Base Architecture:</b> Ultralytics YOLOv8n (Nano) with modified C2f bottleneck blocks.</li>
+            <li><b>Feature Pyramid Network (FPN + PAN):</b> Bi-directional multiscale feature aggregation for both micro-fissures and wide road cavities.</li>
+            <li><b>Anchor-Free Head:</b> Directly regresses center offsets and bounding box dimensions, reducing hyperparameter sensitivity.</li>
+            <li><b>Training Hyperparameters:</b> 30 Epochs, Batch Size 2/4, Image Size 416x416, AdamW optimizer.</li>
+          </ul>
+        </div>
+
+        <div class="glass-panel p-6 space-y-3">
+          <h4 class="text-sm font-bold text-white font-mono uppercase tracking-wider">Civil Engineering Innovation</h4>
+          <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+            <li><b>ASTM D6433 Integration:</b> Translates visual 2D pixel bounding boxes into standard pavement distress deduct points.</li>
+            <li><b>Asphalt Tonnage Engine:</b> Computes required hot-mix asphalt (HMA) volume using geometric depth models and standard 2,400 kg/m³ density.</li>
+            <li><b>Dual Currency Estimator:</b> Calculates localized civil repair budgets in both USD ($) and INR (₹).</li>
+            <li><b>Multi-Frame Tracking:</b> IoU centroid matching prevents duplicate counting across continuous dashcam video routes.</li>
+          </ul>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       MODALS: Crop Zoom, Work Order Detail & Citizen Confirmation
+       ===================================================================== -->
+  
+  <!-- Crop Zoom Modal -->
+  <div id="crop-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="glass-panel p-6 max-w-lg w-full space-y-4 border border-cyan-500/40 relative">
+      <button class="absolute top-4 right-4 text-slate-400 hover:text-white" onclick="window.detectorController.closeCropModal()">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 id="crop-modal-title" class="text-base font-bold text-white font-heading">High-Resolution Defect Crop</h3>
+      <div class="rounded-xl overflow-hidden border border-white/10 bg-black max-h-80 flex items-center justify-center">
+        <img id="crop-modal-image" class="max-h-80 object-contain w-full" alt="Zoomed Crop">
+      </div>
+      <div id="crop-modal-meta" class="text-xs font-mono text-cyan-300"></div>
+    </div>
+  </div>
+
+  <!-- Work Order Detail Modal -->
+  <div id="workorder-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="glass-panel p-6 max-w-xl w-full space-y-4 border border-cyan-500/40 relative">
+      <button class="absolute top-4 right-4 text-slate-400 hover:text-white" onclick="window.municipalController.closeWorkOrderModal()">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      
+      <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+        <i class="fa-solid fa-file-contract text-cyan-400 text-lg"></i>
+        <div>
+          <h3 class="text-base font-bold text-white font-heading">Official Municipal Work Order</h3>
+          <span id="wo-modal-id" class="text-xs font-mono text-cyan-400 font-bold">-</span>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">Road Corridor:</span>
+          <span id="wo-modal-loc" class="text-white font-semibold">-</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">Inspection Date:</span>
+          <span id="wo-modal-date" class="text-slate-200 font-mono">-</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">ASTM Severity:</span>
+          <span id="wo-modal-sev" class="text-amber-400 font-bold font-mono">-</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">Pavement Condition Index:</span>
+          <span id="wo-modal-pci" class="text-cyan-300 font-bold font-mono">-</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">Required Asphalt:</span>
+          <span id="wo-modal-tons" class="text-emerald-400 font-bold font-mono">-</span>
+        </div>
+        <div class="flex justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-400">Estimated Budget:</span>
+          <span id="wo-modal-cost" class="text-amber-400 font-bold font-mono">-</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-1">Recommended Procedure:</span>
+          <p id="wo-modal-action" class="text-slate-200 bg-slate-900/80 p-2.5 rounded-lg border border-white/5 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-3 border-t border-white/10">
+        <button class="flex-1 py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+                onclick="window.municipalController.downloadCurrentPdf()">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Download Official PDF Work Order</span>
+        </button>
+        <button class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2"
+                onclick="window.municipalController.downloadCurrentCsv()">
+          <i class="fa-solid fa-file-csv"></i>
+          <span>CSV</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Citizen Ticket Confirmation Modal -->
+  <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel p-6 max-w-md w-full space-y-4 border border-emerald-500/50 text-center relative">
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-2xl animate-bounce">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h3 class="text-xl font-bold text-white font-heading">Civic Report Dispatched!</h3>
+      <p class="text-xs text-slate-300">Your road hazard ticket has been queued with municipal road engineering.</p>
+      
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-white/10 space-y-2 text-xs font-mono">
+        <div class="flex justify-between">
+          <span class="text-slate-400">Tracking Ticket:</span>
+          <span id="ticket-id-display" class="text-cyan-400 font-bold">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Location:</span>
+          <span id="ticket-landmark-display" class="text-slate-200 truncate max-w-[200px]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Severity:</span>
+          <span id="ticket-severity-display" class="text-amber-400 font-bold">-</span>
+        </div>
+      </div>
+
+      <button class="w-full py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+              onclick="window.app.closeTicketConfirmationModal()">
+        Done & Return to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- GIS Map Pin Defect Modal -->
+  <div id="gis-pin-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel p-6 max-w-md w-full space-y-4 border border-rose-500/40 relative">
+      <button class="absolute top-4 right-4 text-slate-400 hover:text-white" onclick="window.gisMapController.closePinDefectModal()">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+        <i class="fa-solid fa-map-pin text-rose-400 text-lg"></i>
+        <div>
+          <h3 class="text-base font-bold text-white font-heading">Pin Road Defect via GIS</h3>
+          <span class="text-xs text-slate-400">Reverse Geocoded from OpenStreetMap</span>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Geocoded Coordinates:</label>
+          <div id="gis-pin-coords" class="font-mono text-cyan-300 font-bold bg-slate-900/80 p-2 rounded border border-white/5">-</div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Road / Street Name:</label>
+          <input id="gis-pin-roadname" type="text" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2.5 text-white text-xs outline-none focus:border-cyan-400" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Severity:</label>
+            <select id="gis-pin-sev" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400">
+              <option value="CRITICAL">Critical (Hazard)</option>
+              <option value="HIGH" selected>High Severity</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Defect / Pothole Count:</label>
+            <input id="gis-pin-count" type="number" min="1" max="10" value="2" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400 font-mono" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-3 border-t border-white/10">
+        <button class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30"
+                onclick="window.gisMapController.submitPinDefect()">
+          <i class="fa-solid fa-check"></i>
+          <span>Confirm & Log Defect</span>
+        </button>
+        <button class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+                onclick="window.gisMapController.closePinDefectModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Municipal Kanban Create Work Order Modal -->
+  <div id="create-wo-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel p-6 max-w-lg w-full space-y-4 border border-cyan-500/40 relative">
+      <button class="absolute top-4 right-4 text-slate-400 hover:text-white" onclick="window.municipalController.closeCreateWorkOrderModal()">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+        <i class="fa-solid fa-clipboard-plus text-cyan-400 text-lg"></i>
+        <div>
+          <h3 class="text-base font-bold text-white font-heading">Create Civil Work Order</h3>
+          <span class="text-xs text-slate-400">Directly dispatch a road defect repair ticket to SQLite pipeline</span>
+        </div>
+      </div>
+
+      <form id="create-wo-form" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1">Corridor / Roadway Location</label>
+          <input id="create-wo-location" type="text" required placeholder="e.g. 5th Avenue & 42nd St, Manhattan"
+                 class="w-full bg-slate-900 border border-white/10 rounded-lg p-2.5 text-white text-xs outline-none focus:border-cyan-400" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 mb-1">Latitude</label>
+            <input id="create-wo-lat" type="number" step="0.00001" value="40.7128" required
+                   class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400 font-mono" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Longitude</label>
+            <input id="create-wo-lng" type="number" step="0.00001" value="-74.0060" required
+                   class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400 font-mono" />
+          </div>
+        </div>
+
+        <button type="button" id="create-wo-btn-gps" class="py-1 px-2.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-white/10 text-[11px] font-mono flex items-center gap-1.5">
+          <i class="fa-solid fa-crosshairs text-cyan-400"></i>
+          <span>Auto GPS Current Coordinates</span>
+        </button>
+
+        <div class="grid grid-cols-3 gap-3 pt-1">
+          <div>
+            <label class="block text-slate-300 mb-1">Severity</label>
+            <select id="create-wo-severity" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400">
+              <option value="CRITICAL">Critical (P0)</option>
+              <option value="HIGH" selected>High (P1)</option>
+              <option value="MEDIUM">Medium (P2)</option>
+              <option value="LOW">Low (P3)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Pothole Count</label>
+            <input id="create-wo-count" type="number" min="1" max="15" value="3" required
+                   class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400 font-mono" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Initial Stage</label>
+            <select id="create-wo-initial-status" class="w-full bg-slate-900 border border-white/10 rounded-lg p-2 text-white text-xs outline-none focus:border-cyan-400">
+              <option value="Reported" selected>01 · Reported</option>
+              <option value="Inspection Scheduled">02 · Scheduled</option>
+              <option value="Work Order Issued">03 · Work Order</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 pt-4 border-t border-white/10">
+          <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/30">
+            <i class="fa-solid fa-plus"></i>
+            <span>Dispatch Work Order</span>
+          </button>
+          <button type="button" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+                  onclick="window.municipalController.closeCreateWorkOrderModal()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Controllers -->
+  <script src="/static/js/tilt.js"></script>
+  <script src="/static/js/detector.js"></script>
+  <script src="/static/js/live_hud.js"></script>
+  <script src="/static/js/map.js"></script>
+  <script src="/static/js/municipal.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+</html>

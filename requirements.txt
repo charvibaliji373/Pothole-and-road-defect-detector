@@ -1,0 +1,14 @@
+# RoadVision AI - Dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.12
+ultralytics>=8.3.0
+torch>=2.2.0
+torchvision>=0.17.0
+pillow>=10.2.0
+numpy>=1.26.0
+opencv-python>=4.9.0
+reportlab>=4.1.0
+aiofiles>=24.1.0
+pydantic>=2.7.0
+requests>=2.31.0

@@ -1,0 +1,24 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Uploads and temporary exports (preserve folders with .gitkeep)
+backend/data/uploads/*
+!backend/data/uploads/.gitkeep
+backend/data/exports/*
+!backend/data/exports/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
