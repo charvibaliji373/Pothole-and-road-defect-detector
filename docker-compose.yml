@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  roadvision:
+    build: .
+    container_name: roadvision_app
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./backend/data:/app/backend/data
+    restart: unless-stopped
