@@ -1,3 +1,15 @@
+---
+title: RoadVision AI
+emoji: 🛣️
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # 🛣️ RoadVision AI — Autonomous Pothole & Road Defect Intelligence Platform
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
