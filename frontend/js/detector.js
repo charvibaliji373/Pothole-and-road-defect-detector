@@ -192,6 +192,50 @@ class DetectorController {
     reader.readAsDataURL(file);
   }
 
+  async compressImage(file, maxDimension = 1024, quality = 0.85) {
+    return new Promise((resolve) => {
+      if (!file || !file.type.startsWith('image/')) {
+        return resolve(file);
+      }
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   async runDetection() {
     if (!this.selectedFile && !this.selectedSampleId) {
       window.app.showToast('Please upload a road image or select a preset sample first', 'warning');
@@ -218,7 +262,9 @@ class DetectorController {
     formData.append('longitude', -74.0060);
 
     if (this.selectedFile) {
-      formData.append('file', this.selectedFile);
+      // Compress client-side so 10MB phone uploads turn into 120KB instant uploads
+      const optimizedFile = await this.compressImage(this.selectedFile, 1024, 0.85);
+      formData.append('file', optimizedFile);
     } else if (this.selectedSampleId) {
       formData.append('sample_id', this.selectedSampleId);
     }

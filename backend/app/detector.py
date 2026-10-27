@@ -87,6 +87,11 @@ class RoadDefectDetector:
         else:
             raise ValueError("Unsupported image input type")
 
+        # Auto-downscale large phone/camera images for fast cloud processing
+        max_dim = 1024
+        if max(pil_img.size) > max_dim:
+            pil_img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
         img_w, img_h = pil_img.size
 
         # Perform YOLO inference (lazy loaded)
@@ -138,9 +143,9 @@ class RoadDefectDetector:
         # Generate futuristic HUD annotated image
         annotated_pil, crops_base64 = self._render_hud_annotations(pil_img, detections, metrics["severity"])
 
-        # Convert original & annotated images to base64 for instant frontend rendering
-        orig_b64 = self._pil_to_base64(pil_img)
-        annotated_b64 = self._pil_to_base64(annotated_pil)
+        # Convert original & annotated images to high-efficiency JPEG base64 (drastically faster network payload)
+        orig_b64 = self._pil_to_base64(pil_img, format="JPEG", quality=82)
+        annotated_b64 = self._pil_to_base64(annotated_pil, format="JPEG", quality=82)
 
         inference_time_ms = round((time.time() - start_time) * 1000.0, 1)
 
@@ -152,7 +157,7 @@ class RoadDefectDetector:
             "detections": detections,
             "crops": crops_base64,
             "original_image_base64": f"data:image/jpeg;base64,{orig_b64}",
-            "annotated_image_base64": f"data:image/png;base64,{annotated_b64}",
+            "annotated_image_base64": f"data:image/jpeg;base64,{annotated_b64}",
         }
 
     def _render_hud_annotations(
