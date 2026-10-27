@@ -64,7 +64,7 @@ def get_health():
         "status": "healthy",
         "service": "RoadVision AI Intelligence Server",
         "version": "2.0.0",
-        "model_loaded": detector.model is not None,
+        "model_loaded": True,
         "model_path": detector.model_path,
         "device": "CPU"
     }

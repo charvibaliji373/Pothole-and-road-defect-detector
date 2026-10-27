@@ -29,14 +29,31 @@ class RoadDefectDetector:
         if self._initialized:
             return
         self.model = None
-        self.model_path = None
-        self.load_model()
+        self.model_path = str(PRIMARY_MODEL_PATH) if PRIMARY_MODEL_PATH.exists() else str(FALLBACK_MODEL_PATH)
         self._initialized = True
 
+    @property
+    def is_loaded(self) -> bool:
+        return self.model is not None
+
+    def get_model(self):
+        if self.model is None:
+            self.load_model()
+        return self.model
+
     def load_model(self):
-        """Loads the trained pothole model or falls back to YOLOv8n."""
+        """Loads the trained pothole model on-demand or falls back to YOLOv8n."""
+        if self.model is not None:
+            return
+        import torch
+        # Cap CPU threads to prevent memory spiking on constrained cloud tiers like Render
+        try:
+            torch.set_num_threads(2)
+        except Exception:
+            pass
+
         if PRIMARY_MODEL_PATH.exists():
-            print(f"[Detector] Loading primary trained model: {PRIMARY_MODEL_PATH}")
+            print(f"[Detector] Lazy-loading primary trained model: {PRIMARY_MODEL_PATH}")
             self.model = YOLO(str(PRIMARY_MODEL_PATH))
             self.model_path = str(PRIMARY_MODEL_PATH)
         elif FALLBACK_MODEL_PATH.exists():
@@ -72,8 +89,8 @@ class RoadDefectDetector:
 
         img_w, img_h = pil_img.size
 
-        # Perform YOLO inference
-        results = self.model.predict(
+        # Perform YOLO inference (lazy loaded)
+        results = self.get_model().predict(
             source=pil_img,
             conf=conf_threshold,
             iou=iou_threshold,
@@ -282,7 +299,7 @@ class RoadDefectDetector:
                 pil_frame = Image.fromarray(rgb_frame)
                 img_w, img_h = pil_frame.size
 
-                results = self.model.predict(
+                results = self.get_model().predict(
                     source=pil_frame,
                     conf=conf_threshold,
                     imgsz=320,
